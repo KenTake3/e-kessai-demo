@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>e-決裁 | 決裁申請システム（デモ）</title>
+<style>
+  :root{
+    --bg:#eef1f5; --panel:#ffffff; --ink:#1f2a37; --muted:#5b6675; --line:#d5dbe3;
+    --brand:#1d4f91; --brand-2:#163d70; --accent:#e8f0fb; --err:#c62828; --err-bg:#fdecea;
+    --warn:#a15c00; --warn-bg:#fff4e0; --ok:#1b7a3d; --ok-bg:#e7f5ec; --req:#c62828;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo","Noto Sans CJK JP",sans-serif;font-size:14px;line-height:1.6}
+  a{color:var(--brand)}
+  header.top{background:var(--brand);color:#fff;display:flex;align-items:center;gap:24px;padding:0 20px;height:52px}
+  header.top .logo{font-weight:700;font-size:18px;letter-spacing:.5px}
+  header.top .logo small{font-weight:400;font-size:12px;opacity:.85;margin-left:8px}
+  header.top nav{display:flex;gap:4px;flex:1}
+  header.top nav a{color:#fff;text-decoration:none;padding:6px 12px;border-radius:4px;opacity:.9}
+  header.top nav a.active,header.top nav a:hover{background:rgba(255,255,255,.16);opacity:1}
+  header.top .user{font-size:12px;text-align:right;line-height:1.3}
+  .demo-banner{background:#fff8d6;color:#6b5500;font-size:12px;padding:4px 20px;border-bottom:1px solid #eedc8a}
+  main{max-width:1180px;margin:20px auto;padding:0 16px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-bottom:16px}
+  h1{font-size:20px;margin:0 0 12px}
+  h2{font-size:16px;margin:0 0 12px;padding-left:8px;border-left:4px solid var(--brand)}
+  h3{font-size:14px;margin:16px 0 8px}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+  @media (max-width:800px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  .stat{border:1px solid var(--line);border-radius:6px;padding:12px 14px;background:#fafbfd}
+  .stat .v{font-size:24px;font-weight:700}
+  .stat .l{color:var(--muted);font-size:12px}
+  .stat.bad .v{color:var(--err)}
+  table{border-collapse:collapse;width:100%}
+  th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left;vertical-align:top}
+  th{background:#f4f6f9;font-weight:600;font-size:13px;white-space:nowrap}
+  .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;white-space:nowrap}
+  .b-ng{background:var(--err-bg);color:var(--err)}.b-ok{background:var(--ok-bg);color:var(--ok)}
+  .b-wait{background:var(--warn-bg);color:var(--warn)}.b-info{background:var(--accent);color:var(--brand)}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:4px;padding:7px 16px;font-size:14px;cursor:pointer;font-family:inherit}
+  .btn:hover{background:var(--brand-2)}
+  .btn.sec{background:#fff;color:var(--brand)}
+  .btn.sec:hover{background:var(--accent)}
+  .btn.sm{padding:3px 10px;font-size:12px}
+  .btn.danger{background:#fff;color:var(--err);border-color:var(--err)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .notice{border-left:4px solid var(--warn);background:var(--warn-bg);padding:8px 12px;margin:8px 0;font-size:13px}
+  .notice.info{border-color:var(--brand);background:var(--accent)}
+  .notice.err{border-color:var(--err);background:var(--err-bg)}
+  .notice.ok{border-color:var(--ok);background:var(--ok-bg)}
+  /* stepper */
+  .stepper{display:flex;margin-bottom:16px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
+  .stepper button{flex:1;border:0;background:#fff;padding:10px 6px;font-family:inherit;font-size:13px;cursor:pointer;color:var(--muted);border-right:1px solid var(--line)}
+  .stepper button:last-child{border-right:0}
+  .stepper button.active{background:var(--brand);color:#fff;font-weight:700}
+  .stepper button.done{color:var(--ok)}
+  .step{display:none}.step.active{display:block}
+  /* form */
+  .field{margin-bottom:14px}
+  .field label.lbl{display:block;font-weight:600;font-size:13px;margin-bottom:4px}
+  .req::after{content:"必須";background:var(--req);color:#fff;font-size:10px;padding:0 5px;border-radius:3px;margin-left:6px;font-weight:400;vertical-align:1px}
+  .hint{color:var(--muted);font-size:12px;margin-top:2px}
+  input[type=text],input[type=number],input[type=date],select,textarea{width:100%;border:1px solid #b9c2cf;border-radius:4px;padding:7px 9px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+  textarea{min-height:84px;resize:vertical}
+  input[readonly]{background:#f2f4f7}
+  input:focus,select:focus,textarea:focus{outline:2px solid #8db3e6;border-color:var(--brand)}
+  .counter{font-size:12px;color:var(--muted);text-align:right}
+  .counter.over{color:var(--err);font-weight:700}
+  .inline{display:flex;gap:8px;align-items:center}
+  .inline>*{flex:1}
+  .inline>.shrink{flex:0 0 auto}
+  .checks label{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-weight:400}
+  .radios{display:flex;gap:18px;flex-wrap:wrap}
+  .radios label{display:flex;gap:6px;align-items:center;font-weight:400}
+  fieldset{border:1px solid var(--line);border-radius:6px;padding:12px 16px 4px;margin:0 0 16px}
+  legend{font-weight:700;padding:0 6px;color:var(--brand)}
+  .cond{border-left:3px solid #8db3e6;padding-left:12px;margin:6px 0 12px}
+  .hidden{display:none!important}
+  .cat-list{display:grid;grid-template-columns:240px 1fr;gap:12px;min-height:320px}
+  .cat-major,.cat-minor{border:1px solid var(--line);border-radius:6px;overflow:auto;max-height:420px}
+  .cat-major button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:#fff;padding:10px 12px;font-family:inherit;font-size:14px;cursor:pointer}
+  .cat-major button.active{background:var(--accent);color:var(--brand);font-weight:700}
+  .cat-minor label{display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;align-items:flex-start}
+  .cat-minor label:hover{background:#f7f9fc}
+  .cat-minor .desc{color:var(--muted);font-size:12px}
+  .selected-cat{margin-top:12px;padding:8px 12px;background:var(--accent);border-radius:4px}
+  .actions{display:flex;justify-content:space-between;gap:8px;margin-top:8px}
+  /* modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(15,25,40,.45);display:flex;align-items:center;justify-content:center;z-index:50}
+  .modal{background:#fff;border-radius:8px;width:min(760px,94vw);max-height:86vh;overflow:auto;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+  .modal h2{margin-bottom:10px}
+  .route-table td{vertical-align:middle}
+  .check-result li{margin-bottom:6px}
+  .result-table td.lv{white-space:nowrap}
+  .doc{font-size:13px}
+  .doc table th,.doc table td{border:1px solid var(--line)}
+  footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo">e-決裁<small>サンプルデバイス株式会社</small></div>
+  <nav aria-label="メインメニュー">
+    <a href="#home" data-nav="home" id="nav-home">ホーム</a>
+    <a href="#new" data-nav="new" id="nav-new">新規申請</a>
+    <a href="#list" data-nav="list" id="nav-list">申請一覧</a>
+    <a href="#rules" data-nav="rules" id="nav-rules">決裁規程・記載例</a>
+  </nav>
+  <div class="user">山田 太郎（社員番号 100482）<br>管理本部 経理部 経理企画課</div>
+</header>
+<div class="demo-banner">※ 本サイトはデモ用の架空システムです。実在の企業・人物・システムとは関係ありません。</div>
+
+<main>
+
+<!-- ============ HOME ============ -->
+<section id="view-home" class="view">
+  <div class="panel">
+    <h1>ホーム</h1>
+    <div class="grid g4">
+      <div class="stat"><div class="l">申請中の案件</div><div class="v">3 件</div></div>
+      <div class="stat bad"><div class="l">差し戻し中の案件</div><div class="v">1 件</div></div>
+      <div class="stat bad"><div class="l">全社 差し戻し率（10月）</div><div class="v">38%</div></div>
+      <div class="stat"><div class="l">平均決裁リードタイム（10月）</div><div class="v">12.4 営業日</div></div>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="panel">
+      <h2>お知らせ</h2>
+      <div class="notice"><b>【重要】2026年10月1日 決裁区分を改定しました。</b><br>「業務委託」を「請負型」「準委任型」「ITシステム関連」の3区分に細分化しました。区分の誤りは差し戻しとなります。詳細は決裁規程 第5条を確認してください。</div>
+      <div class="notice">機種依存文字（①、㈱、Ⅱ など）・半角カナは使用できません。登録時にエラーとなります。</div>
+      <div class="notice info">決裁事務局の受付は先着順です。差し戻し後の再申請は、上長承認からやり直しとなります。</div>
+    </div>
+    <div class="panel">
+      <h2>クイックメニュー</h2>
+      <p><a class="btn" href="#new" id="btn-home-new">＋ 新規申請を作成</a></p>
+      <p><a href="#list">申請一覧を見る</a>　/　<a href="#rules">決裁規程・記載例を見る</a></p>
+      <h3>差し戻し中の案件</h3>
+      <table>
+        <tr><th>申請番号</th><th>件名</th><th>状況</th></tr>
+        <tr><td>KS-2026-10-0412</td><td>社内報制作に係る業務委託</td><td><span class="badge b-ng">差し戻し（2回目）</span></td></tr>
+      </table>
+      <p class="hint">事務局コメント：決裁区分の誤り（「広報活動」ではなく「その他広報」）。期待効果に定量的な記載がありません。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LIST ============ -->
+<section id="view-list" class="view hidden">
+  <div class="panel">
+    <h1>申請一覧</h1>
+    <table id="list-table">
+      <thead><tr><th>申請番号</th><th>申請日</th><th>決裁区分</th><th>件名</th><th>金額（税抜）</th><th>状況</th><th>事務局コメント</th></tr></thead>
+      <tbody id="list-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ RULES ============ -->
+<section id="view-rules" class="view hidden">
+  <div class="panel doc">
+    <h1>決裁規程（抜粋）・記載例</h1>
+    <p class="hint">規程の全文は社内ポータル「規程集」を参照してください。本ページは抜粋です。</p>
+    <h3>第5条（決裁区分）</h3>
+    <p>1. 申請者は、案件の内容に応じて別表の決裁区分を選択する。<br>
+    2. ITシステム（ソフトウェア、クラウドサービス、AIツール等）の導入・開発・設定・運用を目的とする業務委託は、契約形態（請負・準委任）にかかわらず「業務委託（ITシステム関連）」で申請する。<br>
+    3. 前項の業務委託のうち、成果物を固定資産（ソフトウェア）として資産計上するものは「IT投資（ソフトウェア資産計上）」で申請する。</p>
+    <h3>別表1 決裁基準（契約・委託）※金額は税抜</h3>
+    <table>
+      <tr><th>金額</th><th>承認者（この順で設定）</th></tr>
+      <tr><td>100万円未満</td><td>所属課長</td></tr>
+      <tr><td>100万円以上 500万円未満</td><td>所属課長 → 所属部長</td></tr>
+      <tr><td>500万円以上 1,000万円未満</td><td>所属課長 → 所属部長 → 本部長</td></tr>
+      <tr><td>1,000万円以上 5,000万円未満</td><td>所属課長 → 所属部長 → 本部長 → 担当役員</td></tr>
+      <tr><td>5,000万円以上</td><td>所属課長 → 所属部長 → 本部長 → 担当役員 → 代表執行役</td></tr>
+    </table>
+    <h3>別表2 合議先</h3>
+    <table>
+      <tr><th>条件</th><th>合議先</th></tr>
+      <tr><td>「業務委託（ITシステム関連）」「IT投資」</td><td>情報システム部長</td></tr>
+      <tr><td>個人情報の取扱いあり</td><td>法務部長</td></tr>
+      <tr><td>予算外</td><td>経営企画部長</td></tr>
+    </table>
+    <h3>記載例（業務委託）</h3>
+    <table>
+      <tr><th>項目</th><th>記載例</th></tr>
+      <tr><td>目的・背景</td><td>〇〇業務の効率化のため、外部の専門業者に委託する。</td></tr>
+      <tr><td>期待効果</td><td>業務効率化および品質向上が見込まれる。</td></tr>
+      <tr><td>選定理由</td><td>実績および価格を総合的に勘案し選定した。</td></tr>
+    </table>
+    <p class="hint">※ 記載例はあくまで参考です。案件に応じて適切に記載してください。</p>
+  </div>
+</section>
+
+<!-- ============ NEW APPLICATION ============ -->
+<section id="view-new" class="view hidden">
+  <div class="panel" style="padding-bottom:8px">
+    <h1>新規決裁申請</h1>
+    <div class="grid g4" style="font-size:13px">
+      <div><span class="hint">申請者</span><br>山田 太郎（100482）</div>
+      <div><span class="hint">所属</span><br>管理本部 経理部 経理企画課</div>
+      <div><span class="hint">申請日</span><br><span id="apply-date">2026-11-10</span></div>
+      <div><span class="hint">申請番号</span><br>（申請時に採番）</div>
+    </div>
+  </div>
+
+  <div class="stepper" role="tablist" aria-label="申請ステップ">
+    <button type="button" data-step="1" id="tab-step1" class="active">1. 決裁区分の選択</button>
+    <button type="button" data-step="2" id="tab-step2">2. 申請内容の入力</button>
+    <button type="button" data-step="3" id="tab-step3">3. 承認ルートの設定</button>
+    <button type="button" data-step="4" id="tab-step4">4. 確認・申請</button>
+  </div>
+
+  <form id="app-form" onsubmit="return false" novalidate>
+
+  <!-- STEP 1 -->
+  <div class="step active" id="step1">
+    <div class="panel">
+      <h2>決裁区分の選択</h2>
+      <p class="hint">大分類を選び、該当する決裁区分を選択してください。区分により入力項目が変わります。</p>
+      <div class="cat-list">
+        <div class="cat-major" id="cat-major" role="listbox" aria-label="大分類"></div>
+        <div class="cat-minor" id="cat-minor" aria-label="決裁区分"></div>
+      </div>
+      <div class="selected-cat" id="selected-cat">選択中の決裁区分：<b id="selected-cat-name">（未選択）</b></div>
+      <div class="actions"><span></span><button type="button" class="btn" id="btn-step1-next">次へ（申請内容の入力）</button></div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step" id="step2">
+    <div class="panel">
+      <h2>申請内容の入力 <span class="hint" id="form-cat-label"></span></h2>
+      <div id="no-cat-msg" class="notice err">先に「1. 決裁区分の選択」で決裁区分を選択してください。</div>
+
+      <div id="form-body" class="hidden">
+        <fieldset>
+          <legend>A. 基本情報</legend>
+          <div class="field">
+            <label class="lbl req" for="f-title">件名</label>
+            <input type="text" id="f-title" name="title" data-max="40" aria-describedby="c-title">
+            <div class="counter" id="c-title">0 / 40文字</div>
+          </div>
+        </fieldset>
+
+        <fieldset id="fs-vendor">
+          <legend>B. 取引先・契約</legend>
+          <div class="grid g2">
+            <div class="field">
+              <label class="lbl req" for="f-vendor-code">取引先コード</label>
+              <div class="inline">
+                <input type="text" id="f-vendor-code" name="vendorCode" readonly placeholder="「取引先検索」から選択">
+                <button type="button" class="btn sec shrink" id="btn-vendor-search">取引先検索</button>
+              </div>
+            </div>
+            <div class="field">
+              <label class="lbl" for="f-vendor-name">取引先名</label>
+              <input type="text" id="f-vendor-name" name="vendorName" readonly>
+            </div>
+          </div>
+          <div class="field t-contract">
+            <label class="lbl req" for="f-contract-type">契約形態</label>
+            <select id="f-contract-type" name="contractType">
+              <option value="">選択してください</option>
+              <option>請負契約</option><option>準委任契約</option><option>派遣契約</option><option>その他</option>
+            </select>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>C. 期間・金額・予算</legend>
+          <div class="grid g2">
+            <div class="field">
+              <label class="lbl req" for="f-start">契約（実施）期間 開始日</label>
+              <input type="date" id="f-start" name="startDate">
+            </div>
+            <div class="field">
+              <label class="lbl req" for="f-end">契約（実施）期間 終了日</label>
+              <input type="date" id="f-end" name="endDate">
+            </div>
+          </div>
+          <div class="grid g3">
+            <div class="field">
+              <label class="lbl req" for="f-amount">金額（税抜・円）</label>
+              <input type="text" inputmode="numeric" id="f-amount" name="amount" placeholder="例：1000000">
+              <div class="hint">半角数字のみ（カンマ不可）</div>
+            </div>
+            <div class="field">
+              <label class="lbl" for="f-tax">消費税（10%）</label>
+              <input type="text" id="f-tax" readonly>
+            </div>
+            <div class="field">
+              <label class="lbl" for="f-total">金額（税込）</label>
+              <input type="text" id="f-total" readonly>
+            </div>
+          </div>
+          <div class="grid g2">
+            <div class="field">
+              <label class="lbl req" for="f-payment">支払条件</label>
+              <select id="f-payment" name="payment">
+                <option value="">選択してください</option>
+                <option>一括払い（検収後）</option><option>月額精算</option><option>マイルストン払い</option><option>前払い</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl req" for="f-costcenter">費用負担部門（コストセンター）</label>
+              <input type="text" id="f-costcenter" name="costCenter" placeholder="4桁の数字">
+            </div>
+          </div>
+          <div class="field">
+            <span class="lbl req" style="display:block;font-weight:600;font-size:13px;margin-bottom:4px">予算区分</span>
+            <div class="radios">
+              <label><input type="radio" name="budget" value="予算内" id="f-budget-in"> 予算内</label>
+              <label><input type="radio" name="budget" value="予算外" id="f-budget-out"> 予算外</label>
+            </div>
+          </div>
+          <div class="field cond hidden" id="cond-budget-in">
+            <label class="lbl req" for="f-budget-no">予算番号</label>
+            <input type="text" id="f-budget-no" name="budgetNo" placeholder="例：B26-XX-0000">
+          </div>
+          <div class="field cond hidden" id="cond-budget-out">
+            <label class="lbl req" for="f-budget-reason">予算外とする理由</label>
+            <textarea id="f-budget-reason" name="budgetReason"></textarea>
+          </div>
+          <div class="field t-accounting">
+            <span class="lbl req" style="display:block;font-weight:600;font-size:13px;margin-bottom:4px">会計処理</span>
+            <div class="radios">
+              <label><input type="radio" name="accounting" value="費用処理" id="f-acc-exp"> 費用処理</label>
+              <label><input type="radio" name="accounting" value="資産計上" id="f-acc-asset"> 資産計上</label>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>D. 申請内容</legend>
+          <div class="field">
+            <label class="lbl req" for="f-purpose">目的・背景</label>
+            <textarea id="f-purpose" name="purpose" data-max="200"></textarea>
+            <div class="counter" id="c-purpose">0 / 200文字</div>
+          </div>
+          <div class="field">
+            <label class="lbl req" for="f-scope" id="lbl-scope">委託内容</label>
+            <textarea id="f-scope" name="scope" data-max="200"></textarea>
+            <div class="counter" id="c-scope">0 / 200文字</div>
+          </div>
+          <div class="field">
+            <label class="lbl req" for="f-effect">期待効果</label>
+            <textarea id="f-effect" name="effect" data-max="150"></textarea>
+            <div class="counter" id="c-effect">0 / 150文字</div>
+            <div class="hint">定量的な効果（時間・金額・件数など）を記載すること</div>
+          </div>
+          <div class="field t-vendor-reason">
+            <label class="lbl req" for="f-reason">取引先の選定理由</label>
+            <textarea id="f-reason" name="reason" data-max="150"></textarea>
+            <div class="counter" id="c-reason">0 / 150文字</div>
+          </div>
+          <div class="grid g2 t-vendor-reason">
+            <div class="field">
+              <label class="lbl req" for="f-quotes">相見積の社数</label>
+              <select id="f-quotes" name="quotes">
+                <option value="">選択してください</option>
+                <option value="0">なし（特命）</option><option value="1">1社</option><option value="2">2社</option><option value="3">3社以上</option>
+              </select>
+            </div>
+            <div class="field cond hidden" id="cond-sole">
+              <label class="lbl req" for="f-sole-reason">特命（相見積なし）の理由</label>
+              <textarea id="f-sole-reason" name="soleReason"></textarea>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset id="fs-extra">
+          <legend>E. 追加確認事項（該当するものをすべてチェック）</legend>
+          <div class="checks">
+            <label><input type="checkbox" id="f-x-personal" name="xPersonal"> 個人情報（氏名・連絡先・口座情報等）の取扱いがある</label>
+            <div class="cond hidden" id="cond-personal">
+              <div class="field">
+                <label class="lbl req" for="f-nda">秘密保持契約（NDA）の締結状況</label>
+                <select id="f-nda" name="nda">
+                  <option value="">選択してください</option><option>締結済</option><option>契約時に締結予定</option><option>未締結</option>
+                </select>
+              </div>
+              <label><input type="checkbox" id="f-safety" name="safety"> 委託先の安全管理措置を確認済みである（必須）</label>
+            </div>
+            <label><input type="checkbox" id="f-x-cloud" name="xCloud"> 社外システムとの接続・クラウドサービスの利用がある</label>
+            <div class="cond hidden" id="cond-cloud">
+              <div class="field">
+                <label class="lbl req" for="f-sec-no">情報セキュリティ審査番号</label>
+                <input type="text" id="f-sec-no" name="secNo" placeholder="例：SEC-2026-0000">
+              </div>
+            </div>
+            <label><input type="checkbox" id="f-x-product" name="xProduct"> 製品・顧客向けの支出がある</label>
+            <div class="cond hidden" id="cond-product">
+              <div class="field">
+                <label class="lbl req" for="f-product-name">対象製品・顧客名</label>
+                <input type="text" id="f-product-name" name="productName">
+              </div>
+            </div>
+            <label><input type="checkbox" id="f-x-overseas" name="xOverseas"> 海外の取引先との取引である</label>
+            <div class="cond hidden" id="cond-overseas">
+              <div class="field">
+                <label class="lbl req" for="f-export-no">該非判定番号</label>
+                <input type="text" id="f-export-no" name="exportNo">
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>F. 事前承認（会議体）</legend>
+          <p class="hint" style="margin-top:0">1,000万円以上（税抜）の案件は、会議体での事前承認情報が必須です（規程 第9条）。</p>
+          <div class="grid g3">
+            <div class="field">
+              <label class="lbl" for="f-meeting">会議体名</label>
+              <select id="f-meeting" name="meeting">
+                <option value="">該当なし</option>
+                <option>経営会議</option><option>投資審議会（全社）</option><option>管理本部 投資審議会</option><option>製造本部 設備審議会</option><option>技術本部 開発審議会</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl" for="f-meeting-date">承認日</label>
+              <input type="date" id="f-meeting-date" name="meetingDate">
+            </div>
+            <div class="field">
+              <label class="lbl" for="f-minutes">議事録番号</label>
+              <input type="text" id="f-minutes" name="minutes" placeholder="例：KS-MTG-2026-0000-00">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>G. 添付資料</legend>
+          <div class="grid g2">
+            <div class="field">
+              <label class="lbl" for="f-file">稟議資料（PDF）</label>
+              <input type="file" id="f-file" name="file" accept=".pdf,application/pdf">
+              <div class="hint" id="file-name"></div>
+            </div>
+            <div class="field">
+              <label class="lbl" for="f-docno">文書管理番号（添付に代えて登録可）</label>
+              <input type="text" id="f-docno" name="docNo" placeholder="例：DOC-XX-2026-0000">
+            </div>
+          </div>
+          <div class="hint">稟議資料の添付、または文書管理番号の登録のいずれかが必須です。</div>
+        </fieldset>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn sec" data-goto="1">戻る</button>
+        <button type="button" class="btn" data-goto="3" id="btn-step2-next">次へ（承認ルートの設定）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step" id="step3">
+    <div class="panel">
+      <h2>承認ルートの設定</h2>
+      <p class="hint">金額・決裁区分・追加確認事項に応じて、決裁規程 別表1・別表2に従い承認者・合議者を設定してください。承認者は役職の低い順に並べてください。</p>
+      <div class="notice info" id="route-amount-info">申請金額（税抜）：未入力</div>
+      <table class="route-table" id="route-table">
+        <thead><tr><th style="width:56px">順番</th><th style="width:80px">種別</th><th>氏名</th><th>所属・役職</th><th style="width:170px">操作</th></tr></thead>
+        <tbody id="route-body"></tbody>
+      </table>
+      <p style="margin-top:12px">
+        <button type="button" class="btn sec" id="btn-add-approver">＋ 承認者を追加</button>
+        <button type="button" class="btn sec" id="btn-add-consult">＋ 合議者を追加</button>
+      </p>
+      <div class="actions">
+        <button type="button" class="btn sec" data-goto="2">戻る</button>
+        <button type="button" class="btn" data-goto="4" id="btn-step3-next">次へ（確認・申請）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step" id="step4">
+    <div class="panel">
+      <h2>確認・申請</h2>
+      <div id="summary"></div>
+      <h3>事前チェック</h3>
+      <p class="hint">申請前に、決裁事務局のチェック項目に沿って自己チェックできます。エラーのまま申請すると、事務局で差し戻しとなります。</p>
+      <p><button type="button" class="btn sec" id="btn-precheck">事前チェックを実行</button></p>
+      <div id="check-result" aria-live="polite"></div>
+      <div class="actions">
+        <button type="button" class="btn sec" data-goto="3">戻る</button>
+        <button type="button" class="btn" id="btn-submit">申請する</button>
+      </div>
+    </div>
+  </div>
+  </form>
+</section>
+
+<!-- ============ DONE ============ -->
+<section id="view-done" class="view hidden">
+  <div class="panel">
+    <h1>申請を受け付けました</h1>
+    <div class="notice ok" id="done-msg"></div>
+    <div id="done-body"></div>
+    <p><a class="btn sec" href="#home" id="btn-done-home">ホームへ戻る</a></p>
+  </div>
+</section>
+
+</main>
+<footer>e-決裁 v3.2　© サンプルデバイス株式会社（架空）　デモ環境</footer>
+
+<!-- modal container -->
+<div id="modal-root"></div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = (s,el=document)=>el.querySelector(s);
+  const $$ = (s,el=document)=>Array.from(el.querySelectorAll(s));
+  const TODAY = "2026-11-10";
+
+  /* ---------------- master data ---------------- */
+  const CATS = [
+    {major:"契約・委託", items:[
+      {id:"c-ukeoi", name:"業務委託（請負型）", tpl:"itaku", desc:"成果物の完成を目的とする委託（制作物・調査報告書等）"},
+      {id:"c-junin", name:"業務委託（準委任型）", tpl:"itaku", desc:"一定の事務処理・作業の遂行を目的とする委託（作業支援・運用支援等）"},
+      {id:"c-it", name:"業務委託（ITシステム関連）", tpl:"itaku_it", desc:"システム・ツールに関する委託（2026年10月新設）"},
+      {id:"c-haken", name:"人材派遣契約", tpl:"itaku", desc:"派遣社員の受け入れ"},
+      {id:"c-nda", name:"秘密保持契約のみ", tpl:"generic", desc:"金銭の授受を伴わない秘密保持契約"}
+    ]},
+    {major:"購買・発注", items:[
+      {id:"c-buy-s", name:"物品購入（20万円以下）", tpl:"generic", desc:"消耗品・備品等"},
+      {id:"c-buy-l", name:"物品購入（20万円超）", tpl:"generic", desc:"備品・機器等"},
+      {id:"c-gaichu", name:"外注加工", tpl:"generic", desc:"製造工程の外注"}
+    ]},
+    {major:"投資", items:[
+      {id:"c-capex", name:"設備投資", tpl:"invest", desc:"有形固定資産の取得"},
+      {id:"c-itinv", name:"IT投資（ソフトウェア資産計上）", tpl:"invest", desc:"ソフトウェア・システムの取得"},
+      {id:"c-rd", name:"研究開発投資", tpl:"invest", desc:"研究開発目的の支出"}
+    ]},
+    {major:"経費支出", items:[
+      {id:"c-exp", name:"一般経費支出", tpl:"generic", desc:"その他の経費"},
+      {id:"c-koji", name:"工事費（経費処理）", tpl:"generic", desc:"修繕・小規模工事等"},
+      {id:"c-kosai", name:"交際費・寄付金", tpl:"generic", desc:"接待・寄付・協賛等"}
+    ]},
+    {major:"広報・対外活動", items:[
+      {id:"c-happyo", name:"発表会", tpl:"generic", desc:"新製品発表会・記者発表等"},
+      {id:"c-koho", name:"広報活動", tpl:"generic", desc:"広告・PR・展示会等"},
+      {id:"c-koho-o", name:"その他広報", tpl:"generic", desc:"社内報・ノベルティ等"},
+      {id:"c-ronbun", name:"論文・学会発表", tpl:"generic", desc:"論文投稿・学会発表"}
+    ]},
+    {major:"人事・総務", items:[
+      {id:"c-saiyo", name:"採用関連費用", tpl:"generic", desc:"採用広告・人材紹介等"},
+      {id:"c-kyoiku", name:"教育研修費", tpl:"generic", desc:"外部研修・資格取得等"},
+      {id:"c-tenkin", name:"転勤・赴任関連", tpl:"generic", desc:"転勤・赴任に伴う費用"}
+    ]}
+  ];
+  const catById = id => { for(const g of CATS){ const f=g.items.find(i=>i.id===id); if(f) return Object.assign({major:g.major},f);} return null; };
+
+  const VENDORS = [
+    {code:"V-118230", name:"株式会社ネクストデータ", addr:"大阪府大阪市"},
+    {code:"V-204518", name:"株式会社ネクストデータソリューションズ", addr:"東京都港区"},
+    {code:"V-204581", name:"ネクストデータソリューション株式会社", addr:"東京都品川区"},
+    {code:"V-330912", name:"ネクストデータシステムズ株式会社", addr:"福岡県福岡市"},
+    {code:"V-102255", name:"アルファシステム株式会社", addr:"東京都千代田区"},
+    {code:"V-287104", name:"株式会社デジタルブリッジ", addr:"神奈川県横浜市"},
+    {code:"V-287140", name:"デジタルブリッジ株式会社", addr:"愛知県名古屋市"},
+    {code:"V-150033", name:"株式会社みらい印刷", addr:"熊本県熊本市"}
+  ];
+
+  // rank: 1=課長 2=部長 3=本部長 4=担当役員 5=代表執行役
+  const EMPS = [
+    {id:"E1021", name:"鈴木 一郎", dept:"管理本部 経理部 経理企画課", title:"課長", rank:1, line:true},
+    {id:"E1388", name:"鈴木 一朗", dept:"管理本部 調達部 購買課", title:"課長", rank:1},
+    {id:"E1290", name:"木村 亜紀", dept:"管理本部 経理部 経理企画課", title:"主任", rank:0},
+    {id:"E0877", name:"高橋 美咲", dept:"管理本部 経理部", title:"部長", rank:2, line:true},
+    {id:"E1502", name:"高橋 美紀", dept:"管理本部 人事部", title:"部長", rank:2},
+    {id:"E0412", name:"中村 健", dept:"管理本部", title:"本部長", rank:3, line:true},
+    {id:"E0933", name:"中村 健一", dept:"製造本部 第二製造部", title:"部長", rank:2},
+    {id:"E0105", name:"渡辺 誠", dept:"執行役員（CFO・管理本部担当）", title:"執行役員", rank:4, line:true},
+    {id:"E0688", name:"渡部 誠", dept:"経営企画部", title:"部長", rank:2, role:"keiki"},
+    {id:"E0220", name:"井上 浩二", dept:"執行役員（製造本部担当）", title:"執行役員", rank:4},
+    {id:"E0731", name:"小川 直樹", dept:"情報システム部", title:"部長", rank:2, role:"is"},
+    {id:"E1105", name:"小川 直美", dept:"情報システム部 基盤課", title:"課長", rank:1},
+    {id:"E0650", name:"松本 由紀", dept:"法務部", title:"部長", rank:2, role:"legal"},
+    {id:"E1744", name:"松本 由紀子", dept:"法務部 法務課", title:"担当", rank:0},
+    {id:"E0021", name:"佐々木 隆", dept:"代表執行役社長", title:"代表執行役", rank:5, line:true}
+  ];
+  const empById = id => EMPS.find(e=>e.id===id);
+  const RANK_LABEL = {1:"所属課長",2:"所属部長",3:"本部長",4:"担当役員",5:"代表執行役"};
+
+  const LIST = [
+    {no:"KS-2026-11-0021", date:"2026-11-04", cat:"業務委託（準委任型）", title:"固定資産棚卸 作業支援", amt:2400000, st:["b-wait","事務局確認中（5日経過）"], c:"—"},
+    {no:"KS-2026-10-0412", date:"2026-10-20", cat:"広報活動", title:"社内報制作に係る業務委託", amt:1850000, st:["b-ng","差し戻し（2回目）"], c:"決裁区分の誤り（「その他広報」で申請のこと）。期待効果に定量的な記載なし。"},
+    {no:"KS-2026-10-0388", date:"2026-10-15", cat:"物品購入（20万円以下）", title:"経理部 複合機トナー購入", amt:86000, st:["b-ok","承認済"], c:"—"},
+    {no:"KS-2026-10-0301", date:"2026-10-08", cat:"教育研修費", title:"インボイス制度 実務研修 受講", amt:132000, st:["b-ok","承認済（差し戻し1回）"], c:"機種依存文字（㈱）が含まれていたため修正。"},
+    {no:"KS-2026-09-0977", date:"2026-09-26", cat:"業務委託（請負型）", title:"決算開示資料 英訳", amt:780000, st:["b-ok","承認済（差し戻し3回）"], c:"承認ルート不足（所属部長の承認が必要）。文字数超過。"}
+  ];
+
+  /* ---------------- state ---------------- */
+  const state = { cat:null, major:CATS[0].major, route:[{type:"承認", emp:"E1021"}], fileName:"" };
+
+  /* ---------------- routing ---------------- */
+  function show(view){
+    $$(".view").forEach(v=>v.classList.add("hidden"));
+    const el = $("#view-"+view) || $("#view-home");
+    el.classList.remove("hidden");
+    $$("header nav a").forEach(a=>a.classList.toggle("active", a.dataset.nav===view));
+    window.scrollTo(0,0);
+  }
+  window.addEventListener("hashchange", ()=>show(location.hash.slice(1)||"home"));
+
+  /* ---------------- list ---------------- */
+  $("#list-body").innerHTML = LIST.map(r=>`<tr><td>${r.no}</td><td>${r.date}</td><td>${r.cat}</td><td>${r.title}</td><td>${r.amt.toLocaleString()}円</td><td><span class="badge ${r.st[0]}">${r.st[1]}</span></td><td>${r.c}</td></tr>`).join("");
+
+  /* ---------------- stepper ---------------- */
+  function goStep(n){
+    $$(".step").forEach(s=>s.classList.remove("active"));
+    $("#step"+n).classList.add("active");
+    $$(".stepper button").forEach(b=>b.classList.toggle("active", b.dataset.step==String(n)));
+    if(n===3) renderRoute();
+    if(n===4) renderSummary();
+    window.scrollTo(0,0);
+  }
+  $$(".stepper button").forEach(b=>b.addEventListener("click",()=>goStep(+b.dataset.step)));
+  $$("[data-goto]").forEach(b=>b.addEventListener("click",()=>goStep(+b.dataset.goto)));
+
+  /* ---------------- step1: categories ---------------- */
+  function renderMajors(){
+    $("#cat-major").innerHTML = CATS.map(g=>`<button type="button" role="option" class="${g.major===state.major?'active':''}" data-major="${g.major}" id="major-${CATS.indexOf(g)}">${g.major}</button>`).join("");
+    $$("#cat-major button").forEach(b=>b.addEventListener("click",()=>{state.major=b.dataset.major;renderMajors();renderMinors();}));
+  }
+  function renderMinors(){
+    const g = CATS.find(x=>x.major===state.major);
+    $("#cat-minor").innerHTML = g.items.map(i=>`<label for="${i.id}"><input type="radio" name="category" id="${i.id}" value="${i.id}" ${state.cat===i.id?'checked':''}><span><b>${i.name}</b><br><span class="desc">${i.desc}</span></span></label>`).join("");
+    $$("#cat-minor input").forEach(r=>r.addEventListener("change",()=>{state.cat=r.value;applyCategory();}));
+  }
+  function applyCategory(){
+    const c = catById(state.cat);
+    $("#selected-cat-name").textContent = c ? `${c.major} ＞ ${c.name}` : "（未選択）";
+    $("#no-cat-msg").classList.toggle("hidden", !!c);
+    $("#form-body").classList.toggle("hidden", !c);
+    $("#form-cat-label").textContent = c ? `（${c.name}）` : "";
+    if(!c) return;
+    const tpl = c.tpl;
+    const isItaku = tpl==="itaku"||tpl==="itaku_it";
+    $$(".t-contract").forEach(e=>e.classList.toggle("hidden", !isItaku));
+    $$(".t-vendor-reason").forEach(e=>e.classList.toggle("hidden", tpl==="generic" && !["c-buy-l","c-gaichu","c-koji","c-koho","c-happyo"].includes(c.id)));
+    $$(".t-accounting").forEach(e=>e.classList.toggle("hidden", !(tpl==="itaku_it"||tpl==="invest")));
+    $("#lbl-scope").textContent = isItaku ? "委託内容" : (tpl==="invest" ? "投資内容" : "支出内容");
+    $("#fs-extra").classList.toggle("hidden", tpl==="generic" && c.id==="c-nda");
+  }
+  $("#btn-step1-next").addEventListener("click",()=>{
+    if(!state.cat){ alertBox("決裁区分を選択してください。"); return; }
+    goStep(2);
+  });
+
+  /* ---------------- step2: form behaviour ---------------- */
+  $$("[data-max]").forEach(el=>{
+    const upd=()=>{ const n=[...el.value].length, m=+el.dataset.max; const c=$("#c-"+el.name); if(c){ c.textContent=`${n} / ${m}文字`; c.classList.toggle("over", n>m);} };
+    el.addEventListener("input",upd); upd();
+  });
+  function calcTax(){
+    const v = $("#f-amount").value.trim();
+    if(/^\d+$/.test(v)){ const n=+v; $("#f-tax").value=Math.floor(n*0.1).toLocaleString()+" 円"; $("#f-total").value=Math.floor(n*1.1).toLocaleString()+" 円"; }
+    else { $("#f-tax").value=""; $("#f-total").value=""; }
+  }
+  $("#f-amount").addEventListener("input",calcTax);
+  const toggleCond=(chk,cond)=>{ const f=()=>$(cond).classList.toggle("hidden",!$(chk).checked); $(chk).addEventListener("change",f); f(); };
+  toggleCond("#f-x-personal","#cond-personal");
+  toggleCond("#f-x-cloud","#cond-cloud");
+  toggleCond("#f-x-product","#cond-product");
+  toggleCond("#f-x-overseas","#cond-overseas");
+  $$("input[name=budget]").forEach(r=>r.addEventListener("change",()=>{
+    $("#cond-budget-in").classList.toggle("hidden", r.value!=="予算内"||!r.checked);
+    $("#cond-budget-out").classList.toggle("hidden", r.value!=="予算外"||!r.checked);
+  }));
+  $("#f-quotes").addEventListener("change",e=>$("#cond-sole").classList.toggle("hidden", !(e.target.value==="0"||e.target.value==="1")));
+  $("#f-file").addEventListener("change",e=>{ state.fileName = e.target.files[0]?e.target.files[0].name:""; $("#file-name").textContent = state.fileName?("添付：" + state.fileName):""; });
+
+  /* ---------------- modals ---------------- */
+  function openModal(html, onMount){
+    $("#modal-root").innerHTML = `<div class="modal-bg" id="modal-bg"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+    $("#modal-bg").addEventListener("click",e=>{ if(e.target.id==="modal-bg") closeModal(); });
+    onMount && onMount($("#modal-root .modal"));
+  }
+  function closeModal(){ $("#modal-root").innerHTML=""; }
+  function alertBox(msg){
+    openModal(`<h2>確認</h2><p>${msg}</p><p style="text-align:right"><button type="button" class="btn" id="btn-alert-ok">OK</button></p>`, m=>$("#btn-alert-ok",m).addEventListener("click",closeModal));
+  }
+
+  // vendor search
+  $("#btn-vendor-search").addEventListener("click",()=>{
+    openModal(`<h2>取引先検索</h2>
+      <div class="inline" style="margin-bottom:10px"><input type="text" id="vendor-q" placeholder="取引先名・コードで検索" aria-label="取引先検索キーワード"><button type="button" class="btn shrink" id="vendor-q-btn">検索</button></div>
+      <table><thead><tr><th>取引先コード</th><th>取引先名</th><th>所在地</th><th></th></tr></thead><tbody id="vendor-results"></tbody></table>
+      <p style="text-align:right;margin-top:10px"><button type="button" class="btn sec" id="vendor-close">閉じる</button></p>`, m=>{
+      const run=()=>{
+        const q=$("#vendor-q",m).value.trim();
+        const rows=VENDORS.filter(v=>!q||v.name.includes(q)||v.code.includes(q)||v.name.replace(/株式会社/g,"").includes(q.replace(/株式会社|㈱/g,"")));
+        $("#vendor-results",m).innerHTML = rows.length ? rows.map(v=>`<tr><td>${v.code}</td><td>${v.name}</td><td>${v.addr}</td><td><button type="button" class="btn sm" data-vcode="${v.code}" aria-label="${v.name}を選択">選択</button></td></tr>`).join("") : `<tr><td colspan="4">該当する取引先がありません。</td></tr>`;
+        $$("[data-vcode]",m).forEach(b=>b.addEventListener("click",()=>{ const v=VENDORS.find(x=>x.code===b.dataset.vcode); $("#f-vendor-code").value=v.code; $("#f-vendor-name").value=v.name; closeModal(); }));
+      };
+      $("#vendor-q-btn",m).addEventListener("click",run);
+      $("#vendor-q",m).addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();run();} });
+      $("#vendor-close",m).addEventListener("click",closeModal);
+      run();
+    });
+  });
+
+  // employee search
+  function openEmpSearch(type){
+    openModal(`<h2>${type==="承認"?"承認者":"合議者"}を追加</h2>
+      <div class="inline" style="margin-bottom:10px"><input type="text" id="emp-q" placeholder="氏名・所属・役職で検索" aria-label="社員検索キーワード"><button type="button" class="btn shrink" id="emp-q-btn">検索</button></div>
+      <table><thead><tr><th>社員番号</th><th>氏名</th><th>所属</th><th>役職</th><th></th></tr></thead><tbody id="emp-results"></tbody></table>
+      <p style="text-align:right;margin-top:10px"><button type="button" class="btn sec" id="emp-close">閉じる</button></p>`, m=>{
+      const run=()=>{
+        const q=$("#emp-q",m).value.trim().replace(/\s/g,"");
+        const rows=EMPS.filter(e=>!q||(e.name+e.dept+e.title+e.id).replace(/\s/g,"").includes(q));
+        $("#emp-results",m).innerHTML = rows.map(e=>`<tr><td>${e.id}</td><td>${e.name}</td><td>${e.dept}</td><td>${e.title}</td><td><button type="button" class="btn sm" data-emp="${e.id}" aria-label="${e.name}（${e.dept} ${e.title}）を選択">選択</button></td></tr>`).join("");
+        $$("[data-emp]",m).forEach(b=>b.addEventListener("click",()=>{ state.route.push({type, emp:b.dataset.emp}); closeModal(); renderRoute(); }));
+      };
+      $("#emp-q-btn",m).addEventListener("click",run);
+      $("#emp-q",m).addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();run();} });
+      $("#emp-close",m).addEventListener("click",closeModal);
+      run();
+    });
+  }
+  $("#btn-add-approver").addEventListener("click",()=>openEmpSearch("承認"));
+  $("#btn-add-consult").addEventListener("click",()=>openEmpSearch("合議"));
+
+  /* ---------------- step3: route ---------------- */
+  function renderRoute(){
+    const amt = getAmount();
+    $("#route-amount-info").textContent = amt!=null ? `申請金額（税抜）：${amt.toLocaleString()} 円　／　決裁区分：${catById(state.cat)?catById(state.cat).name:"未選択"}` : "申請金額（税抜）：未入力（申請内容の入力で金額を入力してください）";
+    $("#route-body").innerHTML = state.route.length ? state.route.map((r,i)=>{ const e=empById(r.emp); return `<tr data-row="${i}">
+      <td>${i+1}</td><td><span class="badge ${r.type==="承認"?"b-info":"b-wait"}">${r.type}</span></td><td>${e.name}</td><td>${e.dept}　${e.title}</td>
+      <td><button type="button" class="btn sec sm" data-up="${i}" aria-label="${i+1}番目を上へ">↑</button> <button type="button" class="btn sec sm" data-down="${i}" aria-label="${i+1}番目を下へ">↓</button> <button type="button" class="btn danger sm" data-del="${i}" aria-label="${e.name}を削除">削除</button></td></tr>`; }).join("")
+      : `<tr><td colspan="5">承認者が設定されていません。</td></tr>`;
+    $$("[data-up]").forEach(b=>b.addEventListener("click",()=>{const i=+b.dataset.up; if(i>0){[state.route[i-1],state.route[i]]=[state.route[i],state.route[i-1]]; renderRoute();}}));
+    $$("[data-down]").forEach(b=>b.addEventListener("click",()=>{const i=+b.dataset.down; if(i<state.route.length-1){[state.route[i+1],state.route[i]]=[state.route[i],state.route[i+1]]; renderRoute();}}));
+    $$("[data-del]").forEach(b=>b.addEventListener("click",()=>{state.route.splice(+b.dataset.del,1); renderRoute();}));
+  }
+
+  /* ---------------- helpers ---------------- */
+  function getAmount(){ const v=$("#f-amount").value.trim(); return /^\d+$/.test(v)? +v : null; }
+  const val = id => ($(id) ? $(id).value.trim() : "");
+  const radio = n => { const r=$(`input[name=${n}]:checked`); return r?r.value:""; };
+  const visible = el => el && !el.closest(".hidden");
+
+  /* ---------------- validation (決裁事務局チェック) ---------------- */
+  const FORBIDDEN = /[①-⓿Ⅰ-ⅿ❶-➓㈠-㉟㊀-㏿｡-ﾟ髙﨑德]/g;
+  const IT_WORDS = /(システム|OCR|ＯＣＲ|AI|ＡＩ|クラウド|ソフトウェア|SaaS|S\/4|SAP|開発|ツール)/;
+
+  function validate(){
+    const E=[], W=[];
+    const err=(item,msg,ref,target)=>E.push({item,msg,ref,target});
+    const warn=(item,msg,ref,target)=>W.push({item,msg,ref,target});
+    const c = catById(state.cat);
+    if(!c){ err("決裁区分","決裁区分が選択されていません。","第5条",1); return {E,W}; }
+    const amt=getAmount();
+
+    // 区分判定
+    const text = [val("#f-title"),val("#f-purpose"),val("#f-scope")].join(" ");
+    if((c.id==="c-ukeoi"||c.id==="c-junin") && IT_WORDS.test(text))
+      err("決裁区分",`ITシステムに関する業務委託は、契約形態にかかわらず「業務委託（ITシステム関連）」で申請してください（選択中：${c.name}）。`,"第5条2項",1);
+    if(c.id==="c-itinv" && radio("accounting")==="費用処理")
+      err("決裁区分","資産計上しない案件は「IT投資」ではなく「業務委託（ITシステム関連）」等で申請してください。","第5条3項",1);
+    if(c.id==="c-it" && radio("accounting")==="資産計上")
+      err("決裁区分","成果物を資産計上する場合は「IT投資（ソフトウェア資産計上）」で申請してください。","第5条3項",1);
+
+    // 必須
+    const reqs=[["#f-title","件名"],["#f-start","開始日"],["#f-end","終了日"],["#f-amount","金額（税抜）"],["#f-payment","支払条件"],["#f-costcenter","コストセンター"],["#f-purpose","目的・背景"],["#f-scope",$("#lbl-scope").textContent],["#f-effect","期待効果"]];
+    if(visible($("#fs-vendor"))) reqs.push(["#f-vendor-code","取引先コード"]);
+    if(visible($(".t-contract"))) reqs.push(["#f-contract-type","契約形態"]);
+    if(visible($("#f-reason"))) reqs.push(["#f-reason","取引先の選定理由"],["#f-quotes","相見積の社数"]);
+    reqs.forEach(([id,l])=>{ if(!val(id)) err(l,"未入力です。","第8条",2); });
+    if(!radio("budget")) err("予算区分","未選択です。","第8条",2);
+    if(visible($(".t-accounting")) && !radio("accounting")) err("会計処理","未選択です。","第8条",2);
+
+    // 形式
+    if(val("#f-amount") && amt==null) err("金額（税抜）","半角数字のみで入力してください（カンマ・円・全角数字は不可）。","第8条",2);
+    if(val("#f-costcenter") && !/^\d{4}$/.test(val("#f-costcenter"))) err("コストセンター","4桁の半角数字で入力してください。","第8条",2);
+    if(radio("budget")==="予算内"){ if(!val("#f-budget-no")) err("予算番号","予算内の場合は予算番号が必須です。","第8条",2); else if(!/^B\d{2}-[A-Z]{2}-\d{4}$/.test(val("#f-budget-no"))) err("予算番号","形式が正しくありません（例：B26-IT-0412）。","第8条",2); }
+    if(radio("budget")==="予算外" && !val("#f-budget-reason")) err("予算外とする理由","未入力です。","第8条",2);
+    if(val("#f-start") && val("#f-end") && val("#f-end")<=val("#f-start")) err("契約期間","終了日は開始日より後の日付にしてください。","第8条",2);
+    if(val("#f-start") && val("#f-start")<TODAY) err("契約期間","開始日が申請日より前になっています（事後申請は別途理由書が必要）。","第11条",2);
+
+    // 文字数・禁止文字
+    $$("[data-max]").forEach(el=>{
+      if(!visible(el)) return;
+      const n=[...el.value].length, m=+el.dataset.max;
+      const label = el.id==="f-scope" ? $("#lbl-scope").textContent : $(`label[for=${el.id}]`).textContent;
+      if(n>m) err(label,`文字数が上限を超えています（${n}/${m}文字）。`,"第8条2項",2);
+    });
+    $$("#form-body input[type=text]:not([readonly]), #form-body textarea").forEach(el=>{
+      if(!visible(el)) return;
+      const hit = el.value.match(FORBIDDEN);
+      if(hit){ const label=el.id==="f-scope"?$("#lbl-scope").textContent:($(`label[for=${el.id}]`)||{}).textContent||el.name; err(label,`使用できない文字が含まれています：「${[...new Set(hit)].join("」「")}」（機種依存文字・半角カナは使用不可）。`,"第8条3項",2); }
+    });
+    if(val("#f-effect") && !/[0-9０-９]/.test(val("#f-effect"))) err("期待効果","定量的な効果（時間・金額・件数等の数値）が記載されていません。","第8条4項",2);
+
+    // 取引先・相見積
+    if(visible($("#f-reason")) && amt!=null && amt>=1000000){
+      const q=val("#f-quotes");
+      if((q==="0"||q==="1") && !val("#f-sole-reason")) err("相見積","100万円以上の場合、相見積2社以上、または特命理由の記載が必要です。","第10条",2);
+    }
+
+    // 追加確認事項
+    if($("#f-x-personal").checked){
+      if(!val("#f-nda")) err("NDA締結状況","未選択です。","第12条",2);
+      else if(val("#f-nda")==="未締結") err("NDA締結状況","個人情報を取り扱う委託は、NDAの締結（または締結予定）が必要です。","第12条",2);
+      if(!$("#f-safety").checked) err("安全管理措置","委託先の安全管理措置の確認が必要です。","第12条",2);
+    }
+    if($("#f-x-cloud").checked){
+      if(!val("#f-sec-no")) err("情報セキュリティ審査番号","社外接続・クラウド利用がある場合は必須です。","第13条",2);
+      else if(!/^SEC-\d{4}-\d{4}$/.test(val("#f-sec-no"))) err("情報セキュリティ審査番号","形式が正しくありません（例：SEC-2026-0877）。","第13条",2);
+    }
+    if(c.tpl==="itaku_it" && !$("#f-x-cloud").checked && /(クラウド|SaaS|連携)/.test(text))
+      warn("追加確認事項","申請内容にクラウド・システム連携の記載があります。「社外システムとの接続・クラウド利用」の該当有無を確認してください。","第13条",2);
+    if($("#f-x-product").checked && !val("#f-product-name")) err("対象製品・顧客名","未入力です。","第8条",2);
+    if($("#f-x-overseas").checked && !val("#f-export-no")) err("該非判定番号","未入力です。","第14条",2);
+
+    // 事前承認
+    if(amt!=null && amt>=10000000){
+      if(!val("#f-meeting")) err("事前承認（会議体）","1,000万円以上の案件は、会議体名・承認日・議事録番号が必須です。","第9条",2);
+      else { if(!val("#f-meeting-date")) err("会議体 承認日","未入力です。","第9条",2); if(!val("#f-minutes")) err("議事録番号","未入力です。","第9条",2); }
+    }
+    // 添付
+    if(!state.fileName && !val("#f-docno")) err("添付資料","稟議資料の添付、または文書管理番号の登録が必要です。","第8条",2);
+
+    // 承認ルート
+    if(amt!=null){
+      let need=[1];
+      if(amt>=1000000) need=[1,2]; if(amt>=5000000) need=[1,2,3]; if(amt>=10000000) need=[1,2,3,4]; if(amt>=50000000) need=[1,2,3,4,5];
+      const apprs = state.route.filter(r=>r.type==="承認").map(r=>empById(r.emp));
+      need.forEach(rk=>{
+        const ok = apprs.find(e=>e.rank===rk && e.line);
+        if(!ok){
+          const wrong = apprs.find(e=>e.rank===rk && !e.line);
+          if(wrong) err("承認ルート",`「${wrong.name}（${wrong.dept} ${wrong.title}）」は申請者の所属ラインの${RANK_LABEL[rk]}ではありません。`,"別表1",3);
+          else err("承認ルート",`${RANK_LABEL[rk]}の承認が設定されていません（金額 ${amt.toLocaleString()}円）。`,"別表1",3);
+        }
+      });
+      apprs.forEach(e=>{ if(e.rank===0) err("承認ルート",`「${e.name}（${e.title}）」は承認権限がありません。`,"別表1",3); });
+      const ranks = apprs.filter(e=>e.rank>0).map(e=>e.rank);
+      if(ranks.some((r,i)=>i>0 && r<ranks[i-1])) err("承認ルート","承認者の順番が正しくありません（役職の低い順に設定）。","別表1",3);
+      const over = apprs.filter(e=>e.rank>0 && !need.includes(e.rank));
+      if(over.length) warn("承認ルート",`決裁基準を超える承認者が含まれています（${over.map(e=>e.name).join("、")}）。決裁が遅延します。`,"別表1",3);
+      // 合議
+      const cons = state.route.filter(r=>r.type==="合議").map(r=>empById(r.emp));
+      const needCons=[];
+      if(c.id==="c-it"||c.id==="c-itinv") needCons.push(["is","情報システム部長（IT関連）"]);
+      if($("#f-x-personal").checked) needCons.push(["legal","法務部長（個人情報の取扱い）"]);
+      if(radio("budget")==="予算外") needCons.push(["keiki","経営企画部長（予算外）"]);
+      needCons.forEach(([role,l])=>{
+        if(!cons.find(e=>e.role===role)){
+          const asAppr = apprs.find(e=>e.role===role);
+          err("承認ルート（合議）", asAppr ? `${l}が「承認者」として設定されています。「合議者」として設定してください。` : `${l}の合議が設定されていません。`,"別表2",3);
+        }
+      });
+      cons.forEach(e=>{ if(!e.role || !needCons.find(n=>n[0]===e.role)) warn("承認ルート（合議）",`「${e.name}（${e.dept} ${e.title}）」は本案件の合議先に該当しません。`,"別表2",3); });
+    }
+    return {E,W};
+  }
+
+  function renderCheck(res, title){
+    const {E,W}=res;
+    const head = E.length ? `<div class="notice err"><b>${title||"事前チェック結果"}：エラー ${E.length}件 / 警告 ${W.length}件</b><br>エラーを修正してから申請してください。</div>`
+                          : `<div class="notice ok"><b>${title||"事前チェック結果"}：エラーはありません</b>（警告 ${W.length}件）。このまま申請できます。</div>`;
+    const rows = [...E.map(x=>({...x,lv:"エラー"})), ...W.map(x=>({...x,lv:"警告"}))];
+    return head + (rows.length?`<table class="result-table"><thead><tr><th>区分</th><th>項目</th><th>内容</th><th>規程</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td class="lv"><span class="badge ${r.lv==="エラー"?"b-ng":"b-wait"}">${r.lv}</span></td><td>${r.item}</td><td>${r.msg}</td><td>${r.ref}</td><td><button type="button" class="btn sec sm" data-fix="${r.target}">修正する</button></td></tr>`).join("")}</tbody></table>`:"");
+  }
+  function bindFix(root){ $$("[data-fix]",root).forEach(b=>b.addEventListener("click",()=>{ closeModal(); goStep(+b.dataset.fix); })); }
+
+  $("#btn-precheck").addEventListener("click",()=>{ $("#check-result").innerHTML = renderCheck(validate()); bindFix($("#check-result")); });
+
+  /* ---------------- step4: summary & submit ---------------- */
+  function renderSummary(){
+    const c=catById(state.cat), amt=getAmount();
+    const rows=[
+      ["決裁区分", c?`${c.major} ＞ ${c.name}`:"（未選択）"],["件名",val("#f-title")],
+      ["取引先", val("#f-vendor-code")?`${val("#f-vendor-code")} ${val("#f-vendor-name")}`:""],
+      ["契約形態", val("#f-contract-type")],["期間", val("#f-start")&&val("#f-end")?`${val("#f-start")} 〜 ${val("#f-end")}`:""],
+      ["金額（税抜）", amt!=null?amt.toLocaleString()+" 円":val("#f-amount")],["予算", radio("budget")+(val("#f-budget-no")?`（${val("#f-budget-no")}）`:"")],
+      ["承認ルート", state.route.map(r=>`${r.type}：${empById(r.emp).name}`).join(" → ")]
+    ];
+    $("#summary").innerHTML = `<table>${rows.map(r=>`<tr><th style="width:160px">${r[0]}</th><td>${r[1]||'<span class="hint">未入力</span>'}</td></tr>`).join("")}</table>`;
+    $("#check-result").innerHTML="";
+  }
+
+  $("#btn-submit").addEventListener("click",()=>{
+    const res=validate();
+    if(res.E.length){
+      openModal(`<h2>決裁事務局より差し戻されました</h2>
+        <div class="notice err">事務局チェックで不備が見つかりました（事務局受付から差し戻しまで 平均3営業日）。<br>修正後の再申請は、<b>上長承認からやり直し</b>となります。</div>
+        ${renderCheck(res,"事務局チェック結果")}
+        <p style="text-align:right;margin-top:10px"><button type="button" class="btn" id="btn-return-close">閉じて修正する</button></p>`, m=>{ bindFix(m); $("#btn-return-close",m).addEventListener("click",closeModal); });
+      return;
+    }
+    openModal(`<h2>申請の確認</h2><p>この内容で申請します。よろしいですか？</p><p class="hint">申請後、承認ルートに沿って順次回付されます。</p>
+      <p style="text-align:right"><button type="button" class="btn sec" id="btn-confirm-cancel">キャンセル</button> <button type="button" class="btn" id="btn-confirm-ok">申請を確定する</button></p>`, m=>{
+      $("#btn-confirm-cancel",m).addEventListener("click",closeModal);
+      $("#btn-confirm-ok",m).addEventListener("click",()=>{
+        closeModal();
+        const no="KS-2026-11-0"+String(100+Math.floor(Math.random()*800));
+        const c=catById(state.cat);
+        $("#done-msg").innerHTML=`申請番号 <b>${no}</b> で受け付けました。事前チェック済みのため、決裁事務局の確認は自動受付となりました。`;
+        $("#done-body").innerHTML=`<table><tr><th style="width:160px">決裁区分</th><td>${c.name}</td></tr><tr><th>件名</th><td>${val("#f-title")}</td></tr><tr><th>金額（税抜）</th><td>${getAmount().toLocaleString()} 円</td></tr><tr><th>回付先</th><td>${state.route.map(r=>`${r.type}：${empById(r.emp).name}（${empById(r.emp).title}）`).join("<br>")}</td></tr></table>`;
+        LIST.unshift({no,date:TODAY,cat:c.name,title:val("#f-title"),amt:getAmount(),st:["b-wait","承認回付中"],c:"—"});
+        $("#list-body").innerHTML = LIST.map(r=>`<tr><td>${r.no}</td><td>${r.date}</td><td>${r.cat}</td><td>${r.title}</td><td>${r.amt.toLocaleString()}円</td><td><span class="badge ${r.st[0]}">${r.st[1]}</span></td><td>${r.c}</td></tr>`).join("");
+        location.hash="done";
+      });
+    });
+  });
+
+  /* ---------------- init ---------------- */
+  renderMajors(); renderMinors(); applyCategory(); renderRoute();
+  show(location.hash.slice(1)||"home");
+})();
+</script>
+</body>
+</html>
